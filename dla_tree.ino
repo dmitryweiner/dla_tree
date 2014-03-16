@@ -1,6 +1,6 @@
 #include <S65Display.h> 
 
-#define MAX_ARRAY_LENGTH 500
+#define MAX_ARRAY_LENGTH 1600
 
 S65Display lcd;
   
@@ -27,9 +27,15 @@ boolean setOnScreen(int x, int y) {
     screen[currentArrayLength*2]   = x;
     screen[currentArrayLength*2+1] = y;
     currentArrayLength++;
-    Serial.println(currentArrayLength);
   }
   return true;
+}
+
+int freeRam () 
+{
+  extern int __heap_start, *__brkval; 
+  int v; 
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
 }
 
 void setup() 
@@ -37,7 +43,6 @@ void setup()
   lcd.init(2); 
   lcd.clear(0); 
   randomSeed(analogRead(0));
-  Serial.begin(9600);
 } 
   
 
@@ -46,15 +51,16 @@ void loop(){
     byte xc, yc;
     byte xn, yn;
     float rm = 1.0;
-    int maxIt = 25;
+    int maxIt = 50;
     int rmax;
     float a;
     
     xc = (S65_WIDTH - 1) / 2;
     yc = (S65_HEIGHT - 1) / 2;
     rmax = min(xc, yc) - 1;
-    lcd.drawPixel(xc, yc, RGB(255, 255, 255));
-    setOnScreen(xc, yc);
+    if (setOnScreen(xc, yc)) {
+      lcd.drawPixel(xc, yc, RGB(255, 255, 255));
+    }
     
     while (rm < rmax) {
       boolean flag = false;
@@ -73,27 +79,22 @@ void loop(){
                   xn = x + nx[k];
                   yn = y + ny[k];
                   if (isOnScreen(xn, yn)) {
-                      lcd.drawPixel(x, y, RGB(255, 255, 255));
-                      setOnScreen(x, y);
+                      if (setOnScreen(x, y)) {
+                        lcd.drawPixel(x, y, RGB(255, 255, 255));
+                      }
                       float r;
                       r = sqrt((x - xc) * (x - xc) + (y - yc) * (y - yc));
-                      if (r > rm);
+                      if (r > rm) {
                           rm = r;
+                      }
                       flag = true;
                       break;
                   }
               }
           }
-          if (flag)
+          if (flag) {
               break;
+          }
         }
-        Serial.print("x = ");
-        Serial.print(x);
-        Serial.print(" y = ");
-        Serial.print(y);
-        Serial.print(" a = ");
-        Serial.print(a);
-        Serial.print(" rm = ");
-        Serial.println(rm);
     }
 }
