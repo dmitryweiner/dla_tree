@@ -1,6 +1,6 @@
 #include <S65Display.h> 
 
-#define MAX_ARRAY_LENGTH 1600
+#define MAX_ARRAY_LENGTH 1700
 
 S65Display lcd;
   
@@ -31,48 +31,54 @@ boolean setOnScreen(int x, int y) {
   return true;
 }
 
-int freeRam () 
-{
-  extern int __heap_start, *__brkval; 
-  int v; 
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
+boolean clearMemory() {
+  for (int i = 0; i < MAX_ARRAY_LENGTH; i++) {
+    screen[i] = 0;
+  }
+  currentArrayLength = 0;
+  return true;
 }
 
 void setup() 
 { 
   lcd.init(2); 
-  lcd.clear(0); 
   randomSeed(analogRead(0));
 } 
   
 
 void loop(){ 
-    byte x, y;
-    byte xc, yc;
-    byte xn, yn;
-    float rm = 1.0;
-    int maxIt = 50;
-    int rmax;
-    float a;
     
-    xc = (S65_WIDTH - 1) / 2;
-    yc = (S65_HEIGHT - 1) / 2;
-    rmax = min(xc, yc) - 1;
-    if (setOnScreen(xc, yc)) {
-      lcd.drawPixel(xc, yc, RGB(255, 255, 255));
-    }
-    
-    while (rm < rmax) {
-      boolean flag = false;
-      a = 3.14159265 * 2 * random(0, 100)/100;
-      x = xc + rm * cos(a);
-      y = yc + rm * sin(a);
-      for (int i = 0; i < maxIt; i++){
+    while (true) {
+      beginOfLoop:
+      byte x, y;
+      byte xc, yc;
+      byte xn, yn;
+      int maxIt = 50;
+      int rmax;
+      float a;
+      boolean outOfMemoryFlag = false;
+      float rm = 1.0;
+
+      xc = (S65_WIDTH - 1) / 2;
+      yc = (S65_HEIGHT - 1) / 2;
+      rmax = min(xc, yc) - 1;
+      lcd.clear(0); 
+      clearMemory();
+      if (setOnScreen(xc, yc)) {
+        lcd.drawPixel(xc, yc, RGB(255, 255, 255));
+      }
+      while (rm < rmax) {
+        boolean flag = false;
+        a = 3.14159265 * 2 * random(0, 100)/100;
+        x = xc + rm * cos(a);
+        y = yc + rm * sin(a);
+        for (int i = 0; i < maxIt; i++){
           byte rand = random(0, 8);
           x = x + nx[rand];
           y = y + ny[rand];
-          if (x < 0 || x > (S65_WIDTH - 1) || y < 0 || y > (S65_HEIGHT - 1))
+          if (x < 0 || x > (S65_WIDTH - 1) || y < 0 || y > (S65_HEIGHT - 1)) {
             break;
+          }
           if (!isOnScreen(x, y)){
               //check the neighbors
               for (byte k = 0; k < 8; k++){
@@ -81,6 +87,8 @@ void loop(){
                   if (isOnScreen(xn, yn)) {
                       if (setOnScreen(x, y)) {
                         lcd.drawPixel(x, y, RGB(255, 255, 255));
+                      } else {
+                        goto beginOfLoop;
                       }
                       float r;
                       r = sqrt((x - xc) * (x - xc) + (y - yc) * (y - yc));
@@ -91,10 +99,11 @@ void loop(){
                       break;
                   }
               }
-          }
+          }//if not on screen
           if (flag) {
-              break;
+            break;
           }
-        }
-    }
+        }//for
+      }//while(r<rmax)
+   }//while(true)
 }
