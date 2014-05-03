@@ -19,16 +19,16 @@ boolean isOnScreen(int x, int y) {
   return false;
 } 
 
-boolean setOnScreen(int x, int y) {
+int setOnScreen(int x, int y) {
   if (currentArrayLength >= (MAX_ARRAY_LENGTH/2)) {
-    return false;
+    return -1;
   }
   if (!isOnScreen(x, y)){
     screen[currentArrayLength*2]   = x;
     screen[currentArrayLength*2+1] = y;
     currentArrayLength++;
   }
-  return true;
+  return currentArrayLength;
 }
 
 boolean clearMemory() {
@@ -39,6 +39,15 @@ boolean clearMemory() {
   return true;
 }
 
+int getColorByNumber(int number) {
+  int red, green, blue;
+  float freq = 3.14159265*2/700;
+  red   = sin(freq*number + 0) * 127 + 128;
+  green = sin(freq*number + 2) * 127 + 128;
+  blue  = sin(freq*number + 4) * 127 + 128;
+  return RGB(red, green, blue);
+}
+
 void setup() 
 { 
   lcd.init(2); 
@@ -47,7 +56,7 @@ void setup()
   
 
 void loop(){ 
-    
+    int loopNumber = 0;
     while (true) {
       beginOfLoop:
       byte x, y;
@@ -58,7 +67,9 @@ void loop(){
       float a;
       boolean outOfMemoryFlag = false;
       float rm = 1.0;
-
+      char buffer[8];
+      
+      loopNumber++;
       xc = (S65_WIDTH - 1) / 2;
       yc = (S65_HEIGHT - 1) / 2;
       rmax = min(xc, yc) - 1;
@@ -85,8 +96,11 @@ void loop(){
                   xn = x + nx[k];
                   yn = y + ny[k];
                   if (isOnScreen(xn, yn)) {
-                      if (setOnScreen(x, y)) {
-                        lcd.drawPixel(x, y, RGB(255, 255, 255));
+                      int number;
+                      if ((number = setOnScreen(x, y)) > 0) {
+                        lcd.drawPixel(x, y, getColorByNumber(number));
+                        sprintf(buffer, "%d:%d", loopNumber, number); 
+                        lcd.drawText(0, 0, buffer, 0, RGB(255,255,255), RGB(0,0,0));
                       } else {
                         goto beginOfLoop;
                       }
